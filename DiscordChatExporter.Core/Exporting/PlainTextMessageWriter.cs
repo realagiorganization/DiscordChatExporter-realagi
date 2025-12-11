@@ -246,6 +246,25 @@ internal class PlainTextMessageWriter(Stream stream, ExportContext context)
             );
         }
 
+        if (message.Snapshots.Any())
+        {
+            foreach (var snapshot in message.Snapshots)
+            {
+                if (string.IsNullOrWhiteSpace(snapshot.Content))
+                    continue;
+
+                var forwardedLabel = snapshot.Timestamp > DateTimeOffset.MinValue
+                    ? $"Forwarded {Context.FormatDate(snapshot.Timestamp)}:"
+                    : "Forwarded message:";
+
+                await _writer.WriteLineAsync(forwardedLabel);
+                await _writer.WriteLineAsync(
+                    await FormatMarkdownAsync(snapshot.Content, cancellationToken)
+                );
+                await _writer.WriteLineAsync();
+            }
+        }
+
         await _writer.WriteLineAsync();
 
         // Attachments, embeds, reactions, etc.

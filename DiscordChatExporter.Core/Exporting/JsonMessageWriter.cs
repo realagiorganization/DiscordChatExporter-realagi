@@ -421,6 +421,77 @@ internal class JsonMessageWriter(Stream stream, ExportContext context)
             );
         }
 
+        // Forwarded messages
+        _writer.WriteStartArray("forwardedMessages");
+
+        foreach (var snapshot in message.Snapshots)
+        {
+            _writer.WriteStartObject();
+
+            if (snapshot.Timestamp > DateTimeOffset.MinValue)
+            {
+                _writer.WriteString(
+                    "timestamp",
+                    Context.NormalizeDate(snapshot.Timestamp)
+                );
+            }
+            else
+            {
+                _writer.WriteNull("timestamp");
+            }
+            _writer.WriteString(
+                "timestampEdited",
+                snapshot.EditedTimestamp?.Pipe(Context.NormalizeDate)
+            );
+            _writer.WriteString(
+                "content",
+                await FormatMarkdownAsync(snapshot.Content, cancellationToken)
+            );
+
+            _writer.WriteStartArray("attachments");
+            foreach (var attachment in snapshot.Attachments)
+            {
+                _writer.WriteStartObject();
+
+                _writer.WriteString("id", attachment.Id.ToString());
+                _writer.WriteString(
+                    "url",
+                    await Context.ResolveAssetUrlAsync(attachment.Url, cancellationToken)
+                );
+                _writer.WriteString("fileName", attachment.FileName);
+                _writer.WriteNumber("fileSizeBytes", attachment.FileSize.TotalBytes);
+
+                _writer.WriteEndObject();
+            }
+            _writer.WriteEndArray();
+
+            _writer.WriteStartArray("embeds");
+            foreach (var embed in snapshot.Embeds)
+                await WriteEmbedAsync(embed, cancellationToken);
+            _writer.WriteEndArray();
+
+            _writer.WriteStartArray("stickers");
+            foreach (var sticker in snapshot.Stickers)
+            {
+                _writer.WriteStartObject();
+
+                _writer.WriteString("id", sticker.Id.ToString());
+                _writer.WriteString("name", sticker.Name);
+                _writer.WriteString("format", sticker.Format.ToString());
+                _writer.WriteString(
+                    "sourceUrl",
+                    await Context.ResolveAssetUrlAsync(sticker.SourceUrl, cancellationToken)
+                );
+
+                _writer.WriteEndObject();
+            }
+            _writer.WriteEndArray();
+
+            _writer.WriteEndObject();
+        }
+
+        _writer.WriteEndArray();
+
         // Author
         _writer.WritePropertyName("author");
         await WriteUserAsync(message.Author, true, cancellationToken);
@@ -542,9 +613,13 @@ internal class JsonMessageWriter(Stream stream, ExportContext context)
         // Inline emoji
         _writer.WriteStartArray("inlineEmojis");
 
+        var emojiSources = new[] { message.Content }.Concat(
+            message.Snapshots.Select(s => s.Content)
+        );
+
         foreach (
-            var emoji in MarkdownParser
-                .ExtractEmojis(message.Content)
+            var emoji in emojiSources
+                .SelectMany(MarkdownParser.ExtractEmojis)
                 .DistinctBy(e => e.Name, StringComparer.Ordinal)
         )
         {

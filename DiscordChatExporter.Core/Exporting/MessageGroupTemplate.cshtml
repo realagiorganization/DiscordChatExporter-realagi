@@ -245,6 +245,41 @@
                     }
 
                     @* Content *@
+                    @if (message.Snapshots.Any(s => !string.IsNullOrWhiteSpace(s.Content)))
+                    {
+                        <div class="chatlog__forwarded">
+                            @foreach (var snapshot in message.Snapshots)
+                            {
+                                if (string.IsNullOrWhiteSpace(snapshot.Content))
+                                {
+                                    continue;
+                                }
+
+                                var hasTimestamp = snapshot.Timestamp > DateTimeOffset.MinValue;
+
+                                <div class="chatlog__forwarded-message">
+                                    <div class="chatlog__forwarded-header">
+                                        <span class="chatlog__forwarded-title">Forwarded message</span>
+
+                                        @if (hasTimestamp)
+                                        {
+                                            <span class="chatlog__forwarded-timestamp" title="@FormatDate(snapshot.Timestamp, "f")">@FormatDate(snapshot.Timestamp)</span>
+                                        }
+
+                                        @if (snapshot.EditedTimestamp is not null)
+                                        {
+                                            <span class="chatlog__forwarded-edited" title="@FormatDate(snapshot.EditedTimestamp.Value, "f")">(edited)</span>
+                                        }
+                                    </div>
+
+                                    <div class="chatlog__forwarded-content chatlog__markdown">
+                                        <span class="chatlog__markdown-preserve"><!--wmm:ignore-->@Html.Raw(await FormatMarkdownAsync(snapshot.Content))<!--/wmm:ignore--></span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
                     @if ((!string.IsNullOrWhiteSpace(message.Content) && !message.IsContentHidden()) || message.EditedTimestamp is not null)
                     {
                         <div class="chatlog__content chatlog__markdown">

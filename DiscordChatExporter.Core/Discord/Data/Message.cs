@@ -25,6 +25,7 @@ public partial record Message(
     IReadOnlyList<Sticker> Stickers,
     IReadOnlyList<Reaction> Reactions,
     IReadOnlyList<User> MentionedUsers,
+    IReadOnlyList<MessageSnapshot> Snapshots,
     MessageReference? Reference,
     Message? ReferencedMessage,
     Interaction? Interaction
@@ -42,7 +43,8 @@ public partial record Message(
         string.IsNullOrWhiteSpace(Content)
         && !Attachments.Any()
         && !Embeds.Any()
-        && !Stickers.Any();
+        && !Stickers.Any()
+        && !Snapshots.Any(s => !s.IsEmpty);
 
     public IEnumerable<User> GetReferencedUsers()
     {
@@ -53,6 +55,10 @@ public partial record Message(
 
         if (ReferencedMessage is not null)
             yield return ReferencedMessage.Author;
+
+        foreach (var snapshot in Snapshots)
+            foreach (var user in snapshot.MentionedUsers)
+                yield return user;
 
         if (Interaction is not null)
             yield return Interaction.User;
@@ -166,6 +172,27 @@ public partial record Message
             json.GetPropertyOrNull("mentions")?.EnumerateArrayOrNull()?.Select(User.Parse).ToArray()
             ?? [];
 
+        var snapshots =
+            json.GetPropertyOrNull("message_snapshots")
+                ?.EnumerateArrayOrNull()
+                ?.Select(MessageSnapshot.Parse)
+                .ToArray() ?? [];
+
+        mentionedUsers = mentionedUsers
+            .Concat(snapshots.SelectMany(s => s.MentionedUsers))
+            .DistinctBy(u => u.Id)
+            .ToArray();
+
+        attachments = attachments
+            .Concat(snapshots.SelectMany(s => s.Attachments))
+            .ToArray();
+
+        embeds = NormalizeEmbeds(
+            embeds.Concat(snapshots.SelectMany(s => s.Embeds)).ToArray()
+        );
+
+        stickers = stickers.Concat(snapshots.SelectMany(s => s.Stickers)).ToArray();
+
         var messageReference = json.GetPropertyOrNull("message_reference")
             ?.Pipe(MessageReference.Parse);
         var referencedMessage = json.GetPropertyOrNull("referenced_message")?.Pipe(Parse);
@@ -186,6 +213,7 @@ public partial record Message
             stickers,
             reactions,
             mentionedUsers,
+            snapshots,
             messageReference,
             referencedMessage,
             interaction

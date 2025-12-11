@@ -304,6 +304,48 @@
             unicode-bidi: bidi-override;
         }
 
+        .chatlog__forwarded {
+            margin-bottom: 0.35rem;
+            padding: 0.5rem 0.75rem;
+            border-left: 4px solid @Themed("#5865f2", "#5865f2");
+            background-color: @Themed("rgba(46, 48, 54, 0.6)", "#f2f3f5");
+            border-radius: 4px;
+        }
+
+        .chatlog__forwarded-message + .chatlog__forwarded-message {
+            margin-top: 0.35rem;
+        }
+
+        .chatlog__forwarded-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.35rem;
+            color: @Themed("#b5b6b8", "#5f5f60");
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .chatlog__forwarded-title {
+            color: @Themed("#ffffff", "#2f3136");
+            font-weight: 600;
+        }
+
+        .chatlog__forwarded-timestamp {
+            color: @Themed("#a3a6aa", "#5e6772");
+            font-weight: 500;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+        }
+
+        .chatlog__forwarded-edited {
+            color: @Themed("#a3a6aa", "#5e6772");
+            font-size: 0.75rem;
+        }
+
+        .chatlog__forwarded-content {
+            color: @Themed("#dcddde", "#2f3136");
+        }
+
         .chatlog__system-notification-icon {
             width: 18px;
             height: 18px;

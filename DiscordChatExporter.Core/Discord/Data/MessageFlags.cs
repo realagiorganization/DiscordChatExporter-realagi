@@ -15,4 +15,5 @@ public enum MessageFlags
     HasThread = 32,
     Ephemeral = 64,
     Loading = 128,
+    HasSnapshot = 16384,
 }
