@@ -94,9 +94,7 @@ internal partial class CsvMessageWriter(Stream stream, ExportContext context)
         if (message.IsSystemNotification)
             contentBuffer.Append(message.GetFallbackContent());
         else
-            contentBuffer.Append(
-                await FormatMarkdownAsync(message.Content, cancellationToken)
-            );
+            contentBuffer.Append(await FormatMarkdownAsync(message.Content, cancellationToken));
 
         if (message.Snapshots.Any())
         {
@@ -110,7 +108,8 @@ internal partial class CsvMessageWriter(Stream stream, ExportContext context)
 
                 if (snapshot.Timestamp > DateTimeOffset.MinValue)
                 {
-                    contentBuffer.Append("Forwarded ")
+                    contentBuffer
+                        .Append("Forwarded ")
                         .Append(Context.FormatDate(snapshot.Timestamp))
                         .Append(": ");
                 }
@@ -119,7 +118,9 @@ internal partial class CsvMessageWriter(Stream stream, ExportContext context)
                     contentBuffer.Append("Forwarded message: ");
                 }
 
-                contentBuffer.Append(await FormatMarkdownAsync(snapshot.Content, cancellationToken));
+                contentBuffer.Append(
+                    await FormatMarkdownAsync(snapshot.Content, cancellationToken)
+                );
             }
         }
 

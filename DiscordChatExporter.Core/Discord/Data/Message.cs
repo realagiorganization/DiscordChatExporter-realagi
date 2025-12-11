@@ -57,8 +57,8 @@ public partial record Message(
             yield return ReferencedMessage.Author;
 
         foreach (var snapshot in Snapshots)
-            foreach (var user in snapshot.MentionedUsers)
-                yield return user;
+        foreach (var user in snapshot.MentionedUsers)
+            yield return user;
 
         if (Interaction is not null)
             yield return Interaction.User;
@@ -183,13 +183,9 @@ public partial record Message
             .DistinctBy(u => u.Id)
             .ToArray();
 
-        attachments = attachments
-            .Concat(snapshots.SelectMany(s => s.Attachments))
-            .ToArray();
+        attachments = attachments.Concat(snapshots.SelectMany(s => s.Attachments)).ToArray();
 
-        embeds = NormalizeEmbeds(
-            embeds.Concat(snapshots.SelectMany(s => s.Embeds)).ToArray()
-        );
+        embeds = NormalizeEmbeds(embeds.Concat(snapshots.SelectMany(s => s.Embeds)).ToArray());
 
         stickers = stickers.Concat(snapshots.SelectMany(s => s.Stickers)).ToArray();
 

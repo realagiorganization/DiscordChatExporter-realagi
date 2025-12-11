@@ -43,25 +43,29 @@ public partial record MessageSnapshot
         var content = messageJson.GetPropertyOrNull("content")?.GetStringOrNull() ?? "";
 
         var attachments =
-            messageJson.GetPropertyOrNull("attachments")
+            messageJson
+                .GetPropertyOrNull("attachments")
                 ?.EnumerateArrayOrNull()
                 ?.Select(Attachment.Parse)
                 .ToArray() ?? [];
 
         var embeds =
-            messageJson.GetPropertyOrNull("embeds")
+            messageJson
+                .GetPropertyOrNull("embeds")
                 ?.EnumerateArrayOrNull()
                 ?.Select(Embed.Parse)
                 .ToArray() ?? [];
 
         var stickers =
-            messageJson.GetPropertyOrNull("sticker_items")
+            messageJson
+                .GetPropertyOrNull("sticker_items")
                 ?.EnumerateArrayOrNull()
                 ?.Select(Sticker.Parse)
                 .ToArray() ?? [];
 
         var mentionedUsers =
-            messageJson.GetPropertyOrNull("mentions")
+            messageJson
+                .GetPropertyOrNull("mentions")
                 ?.EnumerateArrayOrNull()
                 ?.Select(User.Parse)
                 .ToArray() ?? [];

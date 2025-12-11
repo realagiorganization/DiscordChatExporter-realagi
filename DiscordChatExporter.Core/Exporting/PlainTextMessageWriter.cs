@@ -254,9 +254,10 @@ internal class PlainTextMessageWriter(Stream stream, ExportContext context)
                 if (string.IsNullOrWhiteSpace(snapshot.Content))
                     continue;
 
-                var forwardedLabel = snapshot.Timestamp > DateTimeOffset.MinValue
-                    ? $"Forwarded {Context.FormatDate(snapshot.Timestamp)}:"
-                    : "Forwarded message:";
+                var forwardedLabel =
+                    snapshot.Timestamp > DateTimeOffset.MinValue
+                        ? $"Forwarded {Context.FormatDate(snapshot.Timestamp)}:"
+                        : "Forwarded message:";
 
                 await _writer.WriteLineAsync(forwardedLabel);
                 await _writer.WriteLineAsync(

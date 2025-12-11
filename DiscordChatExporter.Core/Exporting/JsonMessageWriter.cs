@@ -430,10 +430,7 @@ internal class JsonMessageWriter(Stream stream, ExportContext context)
 
             if (snapshot.Timestamp > DateTimeOffset.MinValue)
             {
-                _writer.WriteString(
-                    "timestamp",
-                    Context.NormalizeDate(snapshot.Timestamp)
-                );
+                _writer.WriteString("timestamp", Context.NormalizeDate(snapshot.Timestamp));
             }
             else
             {
