@@ -138,10 +138,37 @@ public class DiscordClient(
         CancellationToken cancellationToken = default
     )
     {
-        using var response = await GetResponseAsync(url, cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        while (true)
         {
+            using var response = await GetResponseAsync(url, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadAsJsonAsync(cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                // Respect hard rate limit: wait retry_after and try again.
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                var retryAfterSeconds = 1.0;
+
+                try
+                {
+                    var json = JsonDocument.Parse(body).RootElement;
+                    retryAfterSeconds =
+                        json.GetPropertyOrNull("retry_after")?.GetDouble() ?? retryAfterSeconds;
+                }
+                catch (JsonException) { }
+
+                var delay =
+                    TimeSpan
+                        .FromSeconds(retryAfterSeconds)
+                        .Clamp(TimeSpan.Zero, TimeSpan.FromSeconds(60))
+                    + TimeSpan.FromSeconds(1); // small buffer
+
+                await Task.Delay(delay, cancellationToken);
+                continue;
+            }
+
             throw response.StatusCode switch
             {
                 HttpStatusCode.Unauthorized => throw new DiscordChatExporterException(
@@ -171,8 +198,6 @@ public class DiscordClient(
                 ),
             };
         }
-
-        return await response.Content.ReadAsJsonAsync(cancellationToken);
     }
 
     private async ValueTask<JsonElement?> TryGetJsonResponseAsync(
