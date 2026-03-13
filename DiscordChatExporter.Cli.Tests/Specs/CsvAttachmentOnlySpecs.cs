@@ -96,17 +96,21 @@ public class CsvAttachmentOnlySpecs
         {
             Id = Snowflake.Parse("6"),
             Content = "",
-            Attachments = []
+            Attachments = [],
         };
 
         await using var stream = new MemoryStream();
-        var context = CreateContext(Path.Combine(Path.GetTempPath(), "csv-export.csv"), ExportFormat.Csv);
-        var writer = new CsvMessageWriter(stream, context);
-
-        await writer.WritePreambleAsync();
-        await writer.WriteMessageAsync(attachmentOnlyMessage);
-        await writer.WriteMessageAsync(emptyMessage);
-        await writer.WritePostambleAsync();
+        var context = CreateContext(
+            Path.Combine(Path.GetTempPath(), "csv-export.csv"),
+            ExportFormat.Csv
+        );
+        await using (var writer = new CsvMessageWriter(stream, context))
+        {
+            await writer.WritePreambleAsync();
+            await writer.WriteMessageAsync(attachmentOnlyMessage);
+            await writer.WriteMessageAsync(emptyMessage);
+            await writer.WritePostambleAsync();
+        }
 
         var csv = Encoding.UTF8.GetString(stream.ToArray());
 
