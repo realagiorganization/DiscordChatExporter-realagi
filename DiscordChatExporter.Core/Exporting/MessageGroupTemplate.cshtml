@@ -244,7 +244,108 @@
                         </div>
                     }
 
+                    @{
+                        var forwardedAttachmentIds = message.Snapshots
+                            .SelectMany(s => s.Attachments)
+                            .Select(a => a.Id)
+                            .ToHashSet();
+
+                        var messageAttachments = message.Attachments
+                            .Where(a => !forwardedAttachmentIds.Contains(a.Id))
+                            .ToArray();
+                    }
+
                     @* Content *@
+                    @if (message.Snapshots.Any(s => !s.IsEmpty))
+                    {
+                        <div class="chatlog__forwarded">
+                            @foreach (var snapshot in message.Snapshots)
+                            {
+                                if (snapshot.IsEmpty)
+                                {
+                                    continue;
+                                }
+
+                                var hasTimestamp = snapshot.Timestamp > DateTimeOffset.MinValue;
+
+                                <div class="chatlog__forwarded-message">
+                                    <div class="chatlog__forwarded-header">
+                                        <span class="chatlog__forwarded-title">Forwarded message</span>
+
+                                        @if (hasTimestamp)
+                                        {
+                                            <span class="chatlog__forwarded-timestamp" title="@FormatDate(snapshot.Timestamp, "f")">@FormatDate(snapshot.Timestamp)</span>
+                                        }
+
+                                        @if (snapshot.EditedTimestamp is not null)
+                                        {
+                                            <span class="chatlog__forwarded-edited" title="@FormatDate(snapshot.EditedTimestamp.Value, "f")">(edited)</span>
+                                        }
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(snapshot.Content))
+                                    {
+                                        <div class="chatlog__forwarded-content chatlog__markdown">
+                                            <span class="chatlog__markdown-preserve"><!--wmm:ignore-->@Html.Raw(await FormatMarkdownAsync(snapshot.Content))<!--/wmm:ignore--></span>
+                                        </div>
+                                    }
+
+                                    @if (snapshot.Attachments.Any())
+                                    {
+                                        <div class="chatlog__forwarded-attachments">
+                                            @foreach (var attachment in snapshot.Attachments)
+                                            {
+                                                <div class="chatlog__attachment @(attachment.IsSpoiler ? "chatlog__attachment--hidden" : null)" onclick="@(attachment.IsSpoiler ? "showSpoiler(event, this)" : null)">
+                                                    @* Spoiler caption *@
+                                                    @if (attachment.IsSpoiler)
+                                                    {
+                                                        <div class="chatlog__attachment-spoiler-caption">SPOILER</div>
+                                                    }
+
+                                                    @* Attachment preview *@
+                                                    @if (attachment.IsImage)
+                                                    {
+                                                        <a href="@await ResolveAssetUrlAsync(attachment.Url)">
+                                                            <img class="chatlog__attachment-media" src="@await ResolveAssetUrlAsync(attachment.Url)" alt="@(attachment.Description ?? "Image attachment")" title="Image: @attachment.FileName (@attachment.FileSize)" loading="lazy">
+                                                        </a>
+                                                    }
+                                                    else if (attachment.IsVideo)
+                                                    {
+                                                        <video class="chatlog__attachment-media" controls>
+                                                            <source src="@await ResolveAssetUrlAsync(attachment.Url)" alt="@(attachment.Description ?? "Video attachment")" title="Video: @attachment.FileName (@attachment.FileSize)">
+                                                        </video>
+                                                    }
+                                                    else if (attachment.IsAudio)
+                                                    {
+                                                        <audio class="chatlog__attachment-media" controls>
+                                                            <source src="@await ResolveAssetUrlAsync(attachment.Url)" alt="@(attachment.Description ?? "Audio attachment")" title="Audio: @attachment.FileName (@attachment.FileSize)">
+                                                        </audio>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="chatlog__attachment-generic">
+                                                            <svg class="chatlog__attachment-generic-icon">
+                                                                <use href="#attachment-icon"/>
+                                                            </svg>
+                                                            <div class="chatlog__attachment-generic-name">
+                                                                <a href="@await ResolveAssetUrlAsync(attachment.Url)">
+                                                                    @attachment.FileName
+                                                                </a>
+                                                            </div>
+                                                            <div class="chatlog__attachment-generic-size">
+                                                                @attachment.FileSize
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
                     @if ((!string.IsNullOrWhiteSpace(message.Content) && !message.IsContentHidden()) || message.EditedTimestamp is not null)
                     {
                         <div class="chatlog__content chatlog__markdown">
@@ -263,7 +364,7 @@
                     }
 
                     @* Attachments *@
-                    @foreach (var attachment in message.Attachments)
+                    @foreach (var attachment in messageAttachments)
                     {
                         <div class="chatlog__attachment @(attachment.IsSpoiler ? "chatlog__attachment--hidden" : null)" onclick="@(attachment.IsSpoiler ? "showSpoiler(event, this)" : null)">
                             @* Spoiler caption *@

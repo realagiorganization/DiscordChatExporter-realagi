@@ -21,7 +21,7 @@ internal class ContainsMessageFilter(string text) : MessageFilter
         );
 
     public override bool IsMatch(Message message) =>
-        IsMatch(message.Content)
+        new[] { message.Content }.Concat(message.Snapshots.Select(s => s.Content)).Any(IsMatch)
         || message.Embeds.Any(e =>
             IsMatch(e.Title)
             || IsMatch(e.Author?.Name)

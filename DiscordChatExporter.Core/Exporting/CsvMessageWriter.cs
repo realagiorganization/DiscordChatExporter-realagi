@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -88,16 +89,42 @@ internal partial class CsvMessageWriter(Stream stream, ExportContext context)
         await _writer.WriteAsync(',');
 
         // Message content
+        var contentBuffer = new StringBuilder();
+
         if (message.IsSystemNotification)
-        {
-            await _writer.WriteAsync(CsvEncode(message.GetFallbackContent()));
-        }
+            contentBuffer.Append(message.GetFallbackContent());
         else
+            contentBuffer.Append(await FormatMarkdownAsync(message.Content, cancellationToken));
+
+        if (message.Snapshots.Any())
         {
-            await _writer.WriteAsync(
-                CsvEncode(await FormatMarkdownAsync(message.Content, cancellationToken))
-            );
+            foreach (var snapshot in message.Snapshots)
+            {
+                if (string.IsNullOrWhiteSpace(snapshot.Content))
+                    continue;
+
+                if (contentBuffer.Length > 0)
+                    contentBuffer.AppendLine().AppendLine();
+
+                if (snapshot.Timestamp > DateTimeOffset.MinValue)
+                {
+                    contentBuffer
+                        .Append("Forwarded ")
+                        .Append(Context.FormatDate(snapshot.Timestamp))
+                        .Append(": ");
+                }
+                else
+                {
+                    contentBuffer.Append("Forwarded message: ");
+                }
+
+                contentBuffer.Append(
+                    await FormatMarkdownAsync(snapshot.Content, cancellationToken)
+                );
+            }
         }
+
+        await _writer.WriteAsync(CsvEncode(contentBuffer.ToString()));
 
         await _writer.WriteAsync(',');
 
