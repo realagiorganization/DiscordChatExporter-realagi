@@ -235,6 +235,15 @@ internal class PlainTextMessageWriter(Stream stream, ExportContext context)
         // Header
         await WriteMessageHeaderAsync(message);
 
+        var snapshotAttachmentIds = message
+            .Snapshots.SelectMany(s => s.Attachments)
+            .Select(a => a.Id)
+            .ToHashSet();
+
+        var messageAttachments = message
+            .Attachments.Where(a => !snapshotAttachmentIds.Contains(a.Id))
+            .ToArray();
+
         // Content
         if (message.IsSystemNotification)
         {
@@ -247,11 +256,11 @@ internal class PlainTextMessageWriter(Stream stream, ExportContext context)
             );
         }
 
-        if (message.Snapshots.Any())
+        if (message.Snapshots.Any(s => !s.IsEmpty))
         {
             foreach (var snapshot in message.Snapshots)
             {
-                if (string.IsNullOrWhiteSpace(snapshot.Content))
+                if (snapshot.IsEmpty)
                     continue;
 
                 var forwardedLabel =
@@ -260,9 +269,19 @@ internal class PlainTextMessageWriter(Stream stream, ExportContext context)
                         : "Forwarded message:";
 
                 await _writer.WriteLineAsync(forwardedLabel);
-                await _writer.WriteLineAsync(
-                    await FormatMarkdownAsync(snapshot.Content, cancellationToken)
-                );
+
+                if (!string.IsNullOrWhiteSpace(snapshot.Content))
+                {
+                    await _writer.WriteLineAsync(
+                        await FormatMarkdownAsync(snapshot.Content, cancellationToken)
+                    );
+                }
+
+                if (snapshot.Attachments.Any())
+                {
+                    await WriteAttachmentsAsync(snapshot.Attachments, cancellationToken);
+                }
+
                 await _writer.WriteLineAsync();
             }
         }
@@ -270,7 +289,7 @@ internal class PlainTextMessageWriter(Stream stream, ExportContext context)
         await _writer.WriteLineAsync();
 
         // Attachments, embeds, reactions, etc.
-        await WriteAttachmentsAsync(message.Attachments, cancellationToken);
+        await WriteAttachmentsAsync(messageAttachments, cancellationToken);
         await WriteEmbedsAsync(message.Embeds, cancellationToken);
         await WriteStickersAsync(message.Stickers, cancellationToken);
         await WriteReactionsAsync(message.Reactions, cancellationToken);
