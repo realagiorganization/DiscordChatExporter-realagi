@@ -22,13 +22,13 @@ public class CsvAttachmentOnlySpecs
             Snowflake.Parse("2"),
             ChannelKind.GuildTextChat,
             guild.Id,
-            parent: null,
-            name: "general",
-            position: 0,
-            iconUrl: null,
-            topic: null,
-            isArchived: false,
-            lastMessageId: Snowflake.Parse("3")
+            Parent: null,
+            Name: "general",
+            Position: 0,
+            IconUrl: null,
+            Topic: null,
+            IsArchived: false,
+            LastMessageId: Snowflake.Parse("3")
         );
 
         var request = new ExportRequest(
@@ -58,9 +58,9 @@ public class CsvAttachmentOnlySpecs
             Snowflake.Parse("10"),
             "https://cdn.test/attachment.bin",
             "attachment.bin",
-            description: null,
-            width: null,
-            height: null,
+            Description: null,
+            Width: null,
+            Height: null,
             FileSize.FromBytes(1024)
         );
 
@@ -68,7 +68,14 @@ public class CsvAttachmentOnlySpecs
             Snowflake.Parse("4"),
             MessageKind.Default,
             MessageFlags.None,
-            new User(Snowflake.Parse("5"), "user", "0001", null, null, false),
+            new User(
+                Snowflake.Parse("5"),
+                IsBot: false,
+                Discriminator: 1,
+                Name: "user",
+                DisplayName: "user",
+                AvatarUrl: ""
+            ),
             Timestamp: DateTimeOffset.Parse("2026-03-13T00:00:00Z"),
             EditedTimestamp: null,
             CallEndedTimestamp: null,
