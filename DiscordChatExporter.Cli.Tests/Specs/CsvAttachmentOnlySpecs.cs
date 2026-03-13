@@ -96,19 +96,20 @@ public class CsvAttachmentOnlySpecs
         {
             Id = Snowflake.Parse("6"),
             Content = "",
-            Attachments = []
+            Attachments = [],
         };
 
-        await using var stream = new MemoryStream();
-        var context = CreateContext(Path.Combine(Path.GetTempPath(), "csv-export.csv"), ExportFormat.Csv);
-        var writer = new CsvMessageWriter(stream, context);
+        var tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.csv");
+        var context = CreateContext(tempFile, ExportFormat.Csv);
 
-        await writer.WritePreambleAsync();
-        await writer.WriteMessageAsync(attachmentOnlyMessage);
-        await writer.WriteMessageAsync(emptyMessage);
-        await writer.WritePostambleAsync();
+        await using (var exporter = new MessageExporter(context))
+        {
+            await exporter.ExportMessageAsync(attachmentOnlyMessage);
+            await exporter.ExportMessageAsync(emptyMessage);
+            await exporter.DisposeAsync();
+        }
 
-        var csv = Encoding.UTF8.GetString(stream.ToArray());
+        var csv = await File.ReadAllTextAsync(tempFile, Encoding.UTF8);
 
         csv.Should().Contain("https://cdn.test/attachment.bin");
         csv.Should().Contain("\"[]\""); // empty attachments column should be an empty list, not NaN
