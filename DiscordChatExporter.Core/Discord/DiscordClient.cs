@@ -162,8 +162,7 @@ public class DiscordClient(
                 var delay =
                     TimeSpan
                         .FromSeconds(retryAfterSeconds)
-                        .Clamp(TimeSpan.Zero, TimeSpan.FromSeconds(60))
-                    + TimeSpan.FromSeconds(1); // small buffer
+                        .Clamp(TimeSpan.Zero, TimeSpan.FromSeconds(60)) + TimeSpan.FromSeconds(1); // small buffer
 
                 await Task.Delay(delay, cancellationToken);
                 continue;
