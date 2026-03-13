@@ -32,6 +32,12 @@ internal partial class CsvMessageWriter(Stream stream, ExportContext context)
         CancellationToken cancellationToken = default
     )
     {
+        if (!attachments.Any())
+        {
+            await _writer.WriteAsync(CsvEncode("[]"));
+            return;
+        }
+
         var buffer = new StringBuilder();
 
         foreach (var attachment in attachments)

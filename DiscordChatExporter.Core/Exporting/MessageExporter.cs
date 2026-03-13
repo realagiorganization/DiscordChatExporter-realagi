@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,6 +66,9 @@ internal partial class MessageExporter(ExportContext context) : IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        if (string.IsNullOrWhiteSpace(message.Content) && message.Attachments.Any())
+            Console.WriteLine($"attachment-only message accepted (message {message.Id})");
+
         var writer = await InitializeWriterAsync(cancellationToken);
         await writer.WriteMessageAsync(message, cancellationToken);
         MessagesExported++;
