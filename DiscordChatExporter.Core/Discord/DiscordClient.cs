@@ -160,8 +160,7 @@ public class DiscordClient(
                 catch (JsonException) { }
 
                 var delay =
-                    TimeSpan
-                        .FromSeconds(retryAfterSeconds)
+                    TimeSpan.FromSeconds(retryAfterSeconds)
                         .Clamp(TimeSpan.Zero, TimeSpan.FromSeconds(60))
                     + TimeSpan.FromSeconds(1); // small buffer
 
